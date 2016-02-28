@@ -36,7 +36,24 @@ static void __init test_stack(void)
 
 static void __init print_processes_backwards(void)
 {
-    // TODO
+    LIST_HEAD(stack);
+    struct task_struct *task;
+    stack_entry_t *tos = NULL;
+    char* buf = NULL;
+    for_each_process(task) 
+    {
+        buf = (char *)kmalloc(128, GFP_KERNEL);
+        buf = get_task_comm(buf, task);
+        stack_push(&stack, create_stack_entry((void*)buf));
+    }
+    while (!stack_empty(&stack))
+    {
+        tos = stack_pop(&stack);
+        buf = STACK_ENTRY_DATA(tos, char*);
+        delete_stack_entry(tos);
+        printk(KERN_ALERT "%s\n", buf);
+        kfree(buf);
+    }
 }
 
 static int __init ll_init(void)
