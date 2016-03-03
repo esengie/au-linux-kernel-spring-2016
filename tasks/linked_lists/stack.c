@@ -7,6 +7,8 @@ stack_entry_t* create_stack_entry(void *data)
 {
     stack_entry_t* tmp = (stack_entry_t *)kmalloc(
         sizeof(stack_entry_t), GFP_KERNEL);
+    if (!tmp)
+        return tmp;
     tmp->data = data;
     return tmp;
 }

@@ -7,8 +7,9 @@
 #include "stack.h"
 #include "assert.h"
 
-static void __init test_stack(void)
+static int __init test_stack(void)
 {
+    // Должна бы возвращать ошибку но не менял
     LIST_HEAD(data_stack);
     stack_entry_t *tos = NULL;
     const char *tos_data = NULL;
@@ -32,19 +33,30 @@ static void __init test_stack(void)
     }
 
     assert(stack_empty(&data_stack));
+    return 0;
 }
 
-static void __init print_processes_backwards(void)
+static int __init print_processes_backwards(void)
 {
+    int ret = 0;
     LIST_HEAD(stack);
     struct task_struct *task;
     stack_entry_t *tos = NULL;
     char* buf = NULL;
     for_each_process(task) 
     {
-        buf = (char *)kmalloc(128, GFP_KERNEL);
+        buf = (char *)kmalloc(sizeof(task->comm), GFP_KERNEL);
+        if (!buf){
+            ret = -ENOMEM;
+            break;
+        }
         buf = get_task_comm(buf, task);
-        stack_push(&stack, create_stack_entry((void*)buf));
+        tos = create_stack_entry((void*)buf);
+        if (!tos){
+            ret = -ENOMEM;
+            break;
+        }
+        stack_push(&stack, tos);
     }
     while (!stack_empty(&stack))
     {
@@ -54,14 +66,19 @@ static void __init print_processes_backwards(void)
         printk(KERN_ALERT "%s\n", buf);
         kfree(buf);
     }
+    return ret;
 }
 
 static int __init ll_init(void)
 {
+    int err = 0;
     printk(KERN_ALERT "Hello, linked_lists\n");
-    test_stack();
-    print_processes_backwards();
-    return 0;
+    err = test_stack();
+    if (err)
+        goto error;
+    err = print_processes_backwards();
+error:
+    return err;
 }
 
 static void __exit ll_exit(void)
