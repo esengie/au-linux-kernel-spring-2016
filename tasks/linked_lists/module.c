@@ -53,6 +53,7 @@ static int __init print_processes_backwards(void)
         buf = get_task_comm(buf, task);
         tos = create_stack_entry((void*)buf);
         if (!tos){
+            kfree(buf);
             ret = -ENOMEM;
             break;
         }
